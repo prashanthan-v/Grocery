@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Bill Generator</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        #overall {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #headdiv {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #heading {
+            font-size: 36px;
+            color: #333;
+        }
+        #products {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #products label {
+            font-size: 24px;
+            color: #28a745;
+        }
+        #products select {
+            font-size: 18px;
+            padding: 5px;
+            margin-top: 10px;
+        }
+        #content {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-size: 20px;
+        }
+        td input {
+            width: 50px;
+            padding: 5px;
+        }
+        #tax {
+            font-size: 18px;
+            padding: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #data-table {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        #data-table, #data-table th, #data-table td {
+            border: 1px solid black;
+        }
+        #data-table th, #data-table td {
+            padding: 10px;
+            text-align: center;
+        }
+        #data-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #data-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        #tablediv {
+            margin-top: 30px;
+        }
+    </style>
+    <script>
+        $(document).ready(function(){
+            var count = 0;
+
+            // Object to store product details
+            const products = {
+                "biscuit": { "price": 10 },
+                "brush": { "price": 15 },
+                "paste": { "price": 20 }
+            };
+
+            $("#select").on("change", function(){
+                var selectedOption = $("#select option:selected").text();
+                var product = products[selectedOption];
+
+                // Check if the product already exists in the table
+                var productExists = false;
+                $("#table tbody tr").each(function(){
+                    if ($(this).find("td:first").text() === selectedOption) {
+                        productExists = true;
+                        return false; // Exit the loop
+                    }
+                });
+
+                if (!productExists && product) {
+                    count++;
+                    var rowid = `row${count}`;
+                    var row = $(`<tr id="${rowid}" style="font-size: 20px;">
+                        <td>${selectedOption}</td>
+                        <td>${product.price}</td>
+                        <td><input type="number" value="1" min="1"></td>
+                    </tr>`);
+                    $("#table tbody").append(row);
+                } else {
+                    alert("Product already added.");
+                }
+            });
+
+            $("button").click(function(){
+                var objectArray = [];
+                $("#table tbody tr").each(function(){
+                    var productObject = {};
+                    $(this).find("td").each(function(index){
+                        var key;
+                        switch(index) {
+                            case 0: key = 'products'; break;
+                            case 1: key = 'price'; break;
+                            case 2: key = 'quantity'; break;
+                        }
+                        if (index === 2 && $(this).find('input').length > 0) {
+                            productObject[key] = $(this).find('input').val();
+                        } else {
+                            productObject[key] = $(this).text();
+                        }
+                    });
+                    objectArray.push(productObject);
+                });
+
+                // Calculate totals and display results
+                var grandTotal = 0;
+                var tableRows = '';
+                objectArray.forEach(product => {
+                    var totalAmount = product.quantity * product.price;
+                    grandTotal += totalAmount;
+                    tableRows += `<tr>
+                        <td>${product.products}</td>
+                        <td>${product.quantity}</td>
+                        <td>${product.price}</td>
+                        <td>${totalAmount}</td>
+                    </tr>`;
+                });
+
+                var tax = $("#tax").val();
+                var taxAmount = 0;
+
+                if (tax == "IGST") {
+                    taxAmount = (grandTotal * 6) / 100;
+                    tableRows += `<tr><td colspan='3'>CGST(6%)</td><td>${taxAmount}</td></tr>`;
+                    tableRows += `<tr><td colspan='3'>SGST(6%)</td><td>${taxAmount}</td></tr>`;
+                    grandTotal += taxAmount * 2;
+                } else {
+                    taxAmount = (grandTotal * 12) / 100;
+                    tableRows += `<tr><td colspan='3'>SGST(12%)</td><td>${taxAmount}</td></tr>`;
+                    grandTotal += taxAmount;
+                }
+
+                tableRows += `<tr><td colspan='3'>Grand Total</td><td>${grandTotal}</td></tr>`;
+
+                var resultHtml = `
+                    <div>
+                        <h1>Grocery-Shop</h1>
+                        <div id='tablediv'>
+                            <table id='data-table' border='1'>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Total Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                $("body").html(resultHtml);
+            });
+        });
+    </script>
+</head>
+<body>
+    <div id="overall">
+        <div id="headdiv">
+            <h1 id="heading">Grocery Bill Generator</h1>
+        </div>
+        <div id="products">
+            <label>Choose Products</label><br><br>
+            <select id="select">
+                <option>biscuit</option>
+                <option>brush</option>
+                <option>paste</option>
+            </select>
+        </div>
+        <div id="content">
+            <table id="table">
+                <thead>
+                    <tr>
+                        <th>Products</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <select id="tax">
+                <option>SGST</option>
+                <option>IGST</option>
+            </select><br><br>
+            <button>Generate Bill</button>
+        </div>
+    </div>
+</body>
+</html>
